@@ -1,26 +1,26 @@
 variable "desired_capacity" {
   description = "Desired number of instances"
-  type        = number
+  type        = 1
 }
 
 variable "max_size" {
   description = "Maximum number of instances"
-  type        = number
+  type        = 1
 }
 
 variable "min_size" {
   description = "Minimum number of instances"
-  type        = number
+  type        = 1
 }
 
 variable "health_check_type" {
   description = "Health check type (EC2, ELB)"
-  type        = string
+  type        = ELB
 }
 
 variable "health_check_grace_period" {
   description = "Time (in seconds) for health check grace period"
-  type        = number
+  type        = 30
 }
 
 variable "vpc_zone_identifier" {

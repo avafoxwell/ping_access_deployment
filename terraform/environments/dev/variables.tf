@@ -1,9 +1,9 @@
 variable "image_id" {
-  default = "ami-dev12345"
+  default = "ami-0acc77abdfc7ed5a6"
 }
 
 variable "instance_type" {
-  default = "t2.micro"
+  default = "t2.medium"
 }
 
 variable "desired_capacity" {
@@ -27,7 +27,7 @@ variable "health_check_grace_period" {
 }
 
 variable "vpc_zone_identifier" {
-  default = ["subnet-12345678"]
+  default = ["subnet-092afd877e79fc3b0"]
 }
 
 variable "target_group_arns" {

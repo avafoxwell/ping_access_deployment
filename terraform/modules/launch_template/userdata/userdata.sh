@@ -3,14 +3,13 @@ exec > /var/log/user-data.log 2>&1
 set -x
 
 # Variables
-BUCKET_NAME="dev-shasrv-euw2-sharedresources-s3"
-OPENJDK_FILE="Linux/PingIdentity/PingAccess-8.1.1/OpenJDK17U-jdk_x64_linux_hotspot_17.0.12_7.tar.gz"
-PINGACCESS_FILE="Linux/PingIdentity/PingAccess-8.1.1/pingaccess-8.1.1.tar.gz"
-RUN_PROPERTIES_FILE="Linux/PingIdentity/run.properties"
+BUCKET_NAME="dev-shasrv-euw2-ping-linux-test"
+PINGACCESS_FILE="Linux/PingIdentity/Linux/pingaccess-7.3.6.zip"
+RUN_PROPERTIES_FILE="Linux/PingIdentity/Linux/run.properties"
 
 # Define installation paths
 INSTALL_DIR="/opt/pingaccess"
-JDK_DIR="/usr/java/jdk-17"
+JDK_DIR="/usr/java/java-17-amazon-corretto"
 
 # Install necessary tools
 yum update -y
@@ -18,23 +17,26 @@ yum install -y wget unzip aws-cli iptables-services
 
 # Install OpenJDK
 mkdir -p $JDK_DIR
-aws s3 cp s3://$BUCKET_NAME/$OPENJDK_FILE /tmp/
-tar -xvzf /tmp/OpenJDK17U-jdk_x64_linux_hotspot_17.0.12_7.tar.gz -C $JDK_DIR --strip-components=1
+sudo yum install java-17-amazon-corretto
 
 # Set JAVA_HOME and PATH environment variables
-echo "export JAVA_HOME=$JDK_DIR" >> /etc/profile
-echo "export PATH=$JAVA_HOME/bin:$PATH" >> /etc/profile
-source /etc/profile
+echo "export JAVA_HOME=$JDK_DIR" | sudo tee -a /etc/profile.d/java.sh
+echo "export PATH=\$JAVA_HOME/bin:\$PATH" | sudo tee -a /etc/profile.d/java.sh
 
-# Verify Java installation
-java -version
 
-# Install PingAccess
-mkdir -p $INSTALL_DIR
-aws s3 cp s3://$BUCKET_NAME/$PINGACCESS_FILE /tmp/
-tar -xvzf /tmp/pingaccess-8.1.1.tar.gz -C $INSTALL_DIR --strip-components=1
+source /etc/profile/java.sh
 
-# Copy run.properties
+# Make the script executable
+sudo chmod +x /etc/profile.d/java.sh
+
+# Load the new environment variables
+source /etc/profile.d/java.sh
+
+# Log JAVA_HOME and PATH for verification
+echo "JAVA_HOME is set to $JAVA_HOME"
+echo "PATH is set to $PATH"
+
+# Copy run.properties file
 aws s3 cp s3://$BUCKET_NAME/$RUN_PROPERTIES_FILE $INSTALL_DIR/conf/run.properties
 
 # Configure PingAccess based on IP Address
@@ -43,15 +45,14 @@ INSTANCE_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/
 IP_ADDRESS=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/local-ipv4)
 
 if [ "$IP_ADDRESS" == "10.52.49.29" ]; then
-    aws s3 cp https://dev-shasrv-euw2-ping-linux-test.s3.eu-west-2.amazonaws.com/PingIdentity/Linux/pingaccess-7.3.6/awssspingt01.broadcast.bskyb.com_data/conf/bootstrap.properties $INSTALL_DIR/conf/
-    aws s3 cp https://dev-shasrv-euw2-ping-linux-test.s3.eu-west-2.amazonaws.com/PingIdentity/Linux/pingaccess-7.3.6/awssspingt01.broadcast.bskyb.com_data/conf/pa.jwk $INSTALL_DIR/conf/
-    aws s3 cp https://dev-shasrv-euw2-ping-linux-test.s3.eu-west-2.amazonaws.com/PingIdentity/Linux/pingaccess-7.3.6/awssspingt01.broadcast.bskyb.com_data/conf/pa.jwk.properties $INSTALL_DIR/conf/
+    aws s3 cp s3://$BUCKET_NAME/Linux/PingIdentity/Linux/pingaccess-7.3.6/awssspingt01.broadcast.bskyb.com_data/conf/bootstrap.properties $INSTALL_DIR/conf/
+    aws s3 cp s3://$BUCKET_NAME/Linux/PingIdentity/Linux/pingaccess-7.3.6/awssspingt01.broadcast.bskyb.com_data/conf/pa.jwk $INSTALL_DIR/conf/
+    aws s3 cp s3://$BUCKET_NAME/Linux/PingIdentity/Linux/pingaccess-7.3.6/awssspingt01.broadcast.bskyb.com_data/conf/pa.jwk.properties $INSTALL_DIR/conf/
 elif [ "$IP_ADDRESS" == "10.52.49.69" ]; then
-    aws s3 cp https://dev-shasrv-euw2-ping-linux-test.s3.eu-west-2.amazonaws.com/PingIdentity/Linux/pingaccess-7.3.6/awssspingt01b.broadcast.bskyb.com_data/conf/bootstrap.properties $INSTALL_DIR/conf/
-    aws s3 cp https://dev-shasrv-euw2-ping-linux-test.s3.eu-west-2.amazonaws.com/PingIdentity/Linux/pingaccess-7.3.6/awssspingt01b.broadcast.bskyb.com_data/conf/pa.jwk $INSTALL_DIR/conf/
-    aws s3 cp https://dev-shasrv-euw2-ping-linux-test.s3.eu-west-2.amazonaws.com/PingIdentity/Linux/pingaccess-7.3.6/awssspingt01b.broadcast.bskyb.com_data/conf/pa.jwk.properties $INSTALL_DIR/conf/
+    aws s3 cp s3://$BUCKET_NAME/Linux/PingIdentity/Linux/pingaccess-7.3.6/awssspingt01b.broadcast.bskyb.com_data/conf/bootstrap.properties $INSTALL_DIR/conf/
+    aws s3 cp s3://$BUCKET_NAME/Linux/PingIdentity/Linux/pingaccess-7.3.6/awssspingt01b.broadcast.bskyb.com_data/conf/pa.jwk $INSTALL_DIR/conf/
+    aws s3 cp s3://$BUCKET_NAME/Linux/PingIdentity/Linux/pingaccess-7.3.6/awssspingt01b.broadcast.bskyb.com_data/conf/pa.jwk.properties $INSTALL_DIR/conf/
 fi
-
 
 # Start PingAccess service (assuming it has a service script or bin command)
 cd $INSTALL_DIR/bin
